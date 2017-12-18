@@ -2,6 +2,8 @@ package me.itsmas.sql.operation;
 
 import me.itsmas.sql.Database;
 
+import javax.annotation.Nonnull;
+
 /**
  * Abstraction of a database operation
  *
@@ -16,5 +18,5 @@ public interface DatabaseOperation<T>
      *
      * @return The result of the operation
      */
-    T execute(Database database);
+    T execute(@Nonnull Database database);
 }

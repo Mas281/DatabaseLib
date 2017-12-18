@@ -6,7 +6,8 @@ import java.util.UUID;
 
 @DatabaseObject(
     table = "users",
-    insertFields = {"id", "name", "rank", "firstJoin"}
+    insertFields = {"id", "name", "rank", "firstJoin"},
+    uniqueKeyField = "id"
 )
 class User
 {

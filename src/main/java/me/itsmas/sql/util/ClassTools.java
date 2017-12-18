@@ -167,6 +167,23 @@ public final class ClassTools
     }
 
     /**
+     * Fetches the unique field of a class
+     *
+     * @param clazz The class
+     * @return The field
+     */
+    public static Field getUniqueField(@Nonnull Class<?> clazz)
+    {
+        checkArgument(clazz.isAnnotationPresent(DatabaseObject.class), "Object class is not @DatabaseObject");
+
+        String fieldName = clazz.getAnnotation(DatabaseObject.class).uniqueKeyField();
+
+        checkArgument(!fieldName.isEmpty(), "Class does not contain a unique field");
+
+        return getField(clazz, fieldName);
+    }
+
+    /**
      * Creates and returns a new instance
      * of a class from its empty constructor
      *
@@ -177,7 +194,7 @@ public final class ClassTools
      * @return The new instance
      */
     @SuppressWarnings("unchecked")
-    public static <T> T newInstance(Class<T> clazz)
+    public static <T> T newInstance(@Nonnull Class<T> clazz)
     {
         try
         {

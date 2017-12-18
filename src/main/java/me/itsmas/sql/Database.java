@@ -1,9 +1,5 @@
 package me.itsmas.sql;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.pool.ProxyConnection;
@@ -14,6 +10,8 @@ import me.itsmas.sql.util.Logs;
 import javax.annotation.Nonnull;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -49,7 +47,7 @@ public class Database
 
             Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown));
         }
-        catch (SQLException | ClassNotFoundException ex)
+        catch (Exception ex)
         {
             Logs.severe("Error connecting to database");
             ex.printStackTrace();
@@ -63,12 +61,11 @@ public class Database
     {
         checkArgument(isConnected(), "Database connection is not open");
 
-        connectionPool.close();
+        shutdown();
     }
 
     /**
-     * Executes a {@link DatabaseOperation}
-     * synchronously and returns the result
+     * Executes a {@link DatabaseOperation} synchronously
      *
      * @param operation The operation
      *
@@ -83,11 +80,11 @@ public class Database
      * Executes a {@link DatabaseOperation} asynchronously
      *
      * @param operation The operation
-     * @return A {@link ListenableFuture} holding the operation result
+     * @return A {@link CompletableFuture} holding the operation result
      */
-    public <T> ListenableFuture<T> executeAsync(@Nonnull DatabaseOperation<T> operation)
+    public <T> CompletableFuture<T> executeAsync(@Nonnull DatabaseOperation<T> operation)
     {
-        return executor.submit(() -> executeSync(operation));
+        return CompletableFuture.supplyAsync(() -> operation.execute(this), executor);
     }
 
     /**
@@ -112,24 +109,22 @@ public class Database
     /**
      * The executor for async operations
      */
-    private ListeningExecutorService executor;
+    private ExecutorService executor;
 
     /**
      * Attempts to open a connection to the database
      *
-     * @param credentials The database credential
-     *
-     * @throws SQLException If an SQL error is encountered
+     * @param credentials The database credentials
      */
-    private void openConnection(DatabaseCredentials credentials) throws SQLException, ClassNotFoundException
+    private void openConnection(DatabaseCredentials credentials)
     {
         checkArgument(!isConnected(), "Already connected to database");
 
         HikariConfig config = new HikariConfig();
 
         config.setDataSourceClassName("com.mysql.cj.jdbc.MysqlDataSource");
-        config.setJdbcUrl(String.format("jdbc:mysql//%s:%s/%s", credentials.host, credentials.port, credentials.database));
 
+        config.setJdbcUrl(String.format("jdbc:mysql//%s:%s/%s", credentials.host, credentials.port, credentials.database));
         config.addDataSourceProperty("databaseName", credentials.database);
 
         config.setUsername(credentials.username);
@@ -138,9 +133,7 @@ public class Database
         config.setConnectionTimeout(30_000L);
 
         connectionPool = new HikariDataSource(config);
-        executor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool(
-            new ThreadFactoryBuilder().setNameFormat("database-thread-%d").build()
-        ));
+        executor = Executors.newCachedThreadPool();
 
         Logs.info("Connected to database successfully");
     }
@@ -165,7 +158,10 @@ public class Database
      */
     private void shutdown()
     {
-        connectionPool.close();
-        executor.shutdown();
+        if (isConnected())
+        {
+            connectionPool.close();
+            executor.shutdown();
+        }
     }
 }

@@ -17,9 +17,19 @@ public class UpdateOperation extends ConditionOperation<Void>
     private final Object object;
 
     /**
-     * The field being updated
+     * The class of the object being updated
      */
-    private final Field field;
+    private final Class<?> clazz;
+
+    /**
+     * The field holding the being updated
+     */
+    private final Field valueField;
+
+    /**
+     * The unique field for the object
+     */
+    private final Field uniqueField;
 
     /**
      * {@link UpdateOperation} constructor
@@ -30,7 +40,10 @@ public class UpdateOperation extends ConditionOperation<Void>
     public UpdateOperation(Object object, String fieldName)
     {
         this.object = object;
-        this.field = ClassTools.getField(object.getClass(), fieldName);
+        this.clazz = object.getClass();
+
+        this.valueField = ClassTools.getField(clazz, fieldName);
+        this.uniqueField = ClassTools.getUniqueField(clazz);
     }
 
     @Override
@@ -52,9 +65,33 @@ public class UpdateOperation extends ConditionOperation<Void>
     {
         return String.format("UPDATE %s SET %s WHERE %s;",
             ClassTools.getTable(object.getClass()),
-            ClassTools.getColumnName(field) + "=?",
+            ClassTools.getColumnName(valueField) + "=?",
             getConditionString()
         );
+    }
+
+    @Override
+    String getConditionString()
+    {
+        String condition = super.getConditionString();
+
+        if (!condition.isEmpty())
+        {
+            condition += " AND ";
+        }
+
+        return condition + getUniqueKeyCondition();
+    }
+
+    /**
+     * Creates the condition string
+     * for the unique object field
+     *
+     * @return The unique field condition
+     */
+    private String getUniqueKeyCondition()
+    {
+        return ClassTools.getColumnName(uniqueField) + "=?";
     }
 
     /**
@@ -67,12 +104,14 @@ public class UpdateOperation extends ConditionOperation<Void>
     {
         try
         {
-            Object[] objects = new Object[conditions.size() + 1];
+            Object[] objects = new Object[conditions.size() + 2];
 
-            objects[0] = field.get(object);
+            objects[0] = valueField.get(object);
 
             Object[] conditionValues = conditions.values().toArray();
             System.arraycopy(conditionValues, 0, objects, 1, conditionValues.length);
+
+            objects[objects.length - 1] = uniqueField.get(object);
 
             return objects;
         }

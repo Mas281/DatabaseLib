@@ -1,11 +1,13 @@
 package me.itsmas.sql.mapping;
 
+import javax.annotation.Nonnull;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,7 +28,7 @@ public class Mappings
      * @param clazz The class to register the mapping for
      * @param mapping The mapping to register
      */
-    public static void registerMapping(Class<?> clazz, Mapping<?> mapping)
+    public static void registerMapping(@Nonnull Class<?> clazz, @Nonnull Mapping<?> mapping)
     {
         MAPPINGS.put(clazz, mapping);
     }
@@ -37,7 +39,7 @@ public class Mappings
      * @param clazz The class
      * @return The optional mapping for the class
      */
-    public static Optional<Mapping> getMapping(Class<?> clazz)
+    public static Optional<Mapping> getMapping(@Nonnull Class<?> clazz)
     {
         return Optional.ofNullable(MAPPINGS.get(clazz));
     }
@@ -161,6 +163,21 @@ public class Mappings
             public Date fromResults(ResultSet results, String fieldName) throws SQLException
             {
                 return results.getDate(fieldName);
+            }
+        });
+
+        registerMapping(Locale.class, new Mapping<Locale>()
+        {
+            @Override
+            public void updateStatement(PreparedStatement statement, Locale data, int index) throws SQLException
+            {
+                statement.setString(index, data.getLanguage());
+            }
+
+            @Override
+            public Locale fromResults(ResultSet results, String fieldName) throws SQLException
+            {
+                return Locale.forLanguageTag(results.getString(fieldName));
             }
         });
     }

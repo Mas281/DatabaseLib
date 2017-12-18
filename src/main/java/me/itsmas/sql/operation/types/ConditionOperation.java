@@ -2,6 +2,7 @@ package me.itsmas.sql.operation.types;
 
 import me.itsmas.sql.operation.DatabaseOperation;
 
+import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,7 +27,7 @@ abstract class ConditionOperation<T> implements DatabaseOperation<T>
      *
      * @return The operation instance
      */
-    public ConditionOperation<T> where(String column, Object value)
+    public ConditionOperation<T> where(@Nonnull String column, @Nonnull Object value)
     {
         conditions.put(column, value);
 

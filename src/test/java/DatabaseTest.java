@@ -2,12 +2,12 @@ import me.itsmas.sql.Database;
 import me.itsmas.sql.credential.DatabaseCredentials;
 import me.itsmas.sql.mapping.Mapping;
 import me.itsmas.sql.mapping.Mappings;
-import me.itsmas.sql.operation.types.SingleFetchOperation;
 import me.itsmas.sql.operation.types.InsertOperation;
+import me.itsmas.sql.operation.types.SingleFetchOperation;
 import me.itsmas.sql.operation.types.UpdateOperation;
 import me.itsmas.sql.util.Logs;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.FixMethodOrder;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -17,21 +17,25 @@ import java.sql.SQLException;
 import java.util.Optional;
 import java.util.UUID;
 
-@FixMethodOrder
 public class DatabaseTest
 {
     private Database database;
-
     private User user;
 
     @Before
-    public void databaseTest()
+    public void initDatabase()
     {
         database = new Database(new DatabaseCredentials("localhost", 3306, "test", "root", "PASSWORD"));
         database.openConnection();
 
         user = new User(UUID.fromString("91874054-b5d0-468f-87a7-7093062278ef"), "Sam");
         registerMapping();
+    }
+
+    @After
+    public void closeConnection()
+    {
+        database.closeConnection();
     }
 
     @Test @Ignore
@@ -45,26 +49,36 @@ public class DatabaseTest
     public void testUpdateUser()
     {
         user.setRank(Rank.VIP);
-        database.executeSync(new UpdateOperation(user, "rank").where("name", "Sam"));
+        database.executeSync(new UpdateOperation(user, "rank"));
 
         Logs.info("Updated user");
     }
 
     @Test @Ignore
-    public void testFetchUser()
+    public void testFetchUserSync()
     {
         SingleFetchOperation<User> operation = new SingleFetchOperation<>(User.class).where("name", "Sam");
         Optional<User> fetched = database.executeSync(operation);
 
-        fetched.ifPresentOrElse(user ->
-        {
-            Logs.info("User fetched:");
+        printUserInfo(fetched);
+    }
 
+    private void printUserInfo(Optional<User> optional)
+    {
+        if (optional.isPresent())
+        {
+            User user = optional.get();
+
+            Logs.info("User fetched:");
             Logs.info("ID: %s", user.getId());
             Logs.info("Name: %s", user.getName());
             Logs.info("Rank: %s", user.getRank());
             Logs.info("First Join: %s", user.getFirstJoin());
-        }, () -> Logs.info("User not fetched"));
+        }
+        else
+        {
+            Logs.info("User not fetched");
+        }
     }
 
     private void registerMapping()

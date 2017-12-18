@@ -19,7 +19,12 @@ public @interface DatabaseObject
     String table();
 
     /**
-     * The fields to insert into row when the object is first created
+     * The fields to insert into the row when the object is first created
      */
     String[] insertFields();
+
+    /**
+     * The name of the field holding the unique value to the  object
+     */
+    String uniqueKeyField() default "";
 }
