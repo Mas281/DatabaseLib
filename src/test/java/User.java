@@ -41,7 +41,7 @@ class User
         return name;
     }
 
-    public void setRank(Rank rank)
+    void setRank(Rank rank)
     {
         this.rank = rank;
     }

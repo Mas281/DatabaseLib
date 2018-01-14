@@ -50,12 +50,6 @@ public class SingleFetchOperation<T> extends ConditionOperation<Optional<T>>
 
                 return Optional.ofNullable(mapped);
             }
-            while (results.next())
-            {
-                // map and return
-
-                rawOperation.closeResources();
-            }
         }
         catch (SQLException ex)
         {

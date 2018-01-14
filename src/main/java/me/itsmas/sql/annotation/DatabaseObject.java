@@ -24,7 +24,7 @@ public @interface DatabaseObject
     String[] insertFields();
 
     /**
-     * The name of the field holding the unique value to the  object
+     * The name of the field holding the unique value to the object
      */
     String uniqueKeyField() default "";
 }
